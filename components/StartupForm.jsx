@@ -13,25 +13,17 @@ import { useRouter } from "next/navigation";
 import { createPitch } from "@/lib/actions";
 import { formSchema } from "@/lib/zod";
 
-/**
- * StartupForm Component
- * Handles the creation of new startup pitches with form validation and markdown editing
- */
 const StartupForm = () => {
-  // State management for form
+  // State management for form errors, pitch content, and utility hooks
   const [errors, setErrors] = useState({});
   const [pitch, setPitch] = useState("");
   const { toast } = useToast();
   const router = useRouter();
 
-  /**
-   * Handles form submission and validation
-   * @param {Object} prevState - Previous form state
-   * @param {FormData} formData - Form data from submission
-   */
+  // Form submission handler with validation and error handling
   const handleFormSubmit = async (prevState, formData) => {
     try {
-      // Extract form values
+      // Extract form values from FormData object
       const formValues = {
         title: formData.get("title"),
         description: formData.get("description"),
@@ -40,30 +32,29 @@ const StartupForm = () => {
         pitch,
       };
 
-      // Validate form data against schema
+      // Validate form data against Zod schema
       await formSchema.parseAsync(formValues);
 
-      // Submit pitch to backend
+      // Submit pitch and handle success response
       const result = await createPitch(prevState, formData, pitch);
 
-      if (result.status === "SUCCESS") {
-        // Fixed loose equality to strict
+      if (result.status == "SUCCESS") {
         toast({
           title: "Success",
           description: "Your startup pitch has been created successfully",
           className: "bg-green-500 text-white",
         });
 
-        // Redirect to the new startup page
         router.push(`/startup/${result._id}`);
       }
 
       return result;
     } catch (error) {
-      // Handle validation errors
+      // Handle Zod validation errors
       if (error instanceof z.ZodError) {
-        const fieldErrors = error.flatten().fieldErrors; // Fixed typo in variable name
-        setErrors(fieldErrors);
+        const fieldErorrs = error.flatten().fieldErrors;
+
+        setErrors(fieldErorrs);
 
         toast({
           title: "Error",
@@ -75,7 +66,6 @@ const StartupForm = () => {
         return { ...prevState, error: "Validation failed", status: "ERROR" };
       }
 
-      // Handle unexpected errors
       toast({
         title: "Error",
         description: "An unexpected error has occurred",
@@ -91,67 +81,88 @@ const StartupForm = () => {
     }
   };
 
-  // Initialize form action state
+  // Initialize form action state for handling submissions
   const [state, formAction, isPending] = useActionState(handleFormSubmit, {
     error: "",
     status: "INITIAL",
   });
 
-  // Form field configuration for DRY code
-  const formFields = [
-    {
-      id: "title",
-      label: "Title",
-      component: Input,
-      placeholder: "Startup Title",
-    },
-    {
-      id: "description",
-      label: "Description",
-      component: Textarea,
-      placeholder: "Startup Description",
-    },
-    {
-      id: "category",
-      label: "Category",
-      component: Input,
-      placeholder: "Startup Category (Tech, Health, Education...)",
-    },
-    {
-      id: "link",
-      label: "Image URL",
-      component: Input,
-      placeholder: "Startup Image URL",
-    },
-  ];
-
   return (
     <form action={formAction} className="startup-form">
-      {/* Render form fields dynamically */}
-      {formFields.map(({ id, label, component: Component, placeholder }) => (
-        <div key={id}>
-          <label htmlFor={id} className="startup-form_label">
-            {label}
-          </label>
-          <Component
-            id={id}
-            name={id}
-            className={`startup-form_${id === "description" ? "textarea" : "input"}`}
-            required
-            placeholder={placeholder}
-          />
-          {errors[id] && <p className="startup-form_error">{errors[id]}</p>}
-        </div>
-      ))}
+      {/* Form inputs for startup details */}
+      <div>
+        <label htmlFor="title" className="startup-form_label">
+          Title
+        </label>
+        <Input
+          id="title"
+          name="title"
+          className="startup-form_input"
+          required
+          placeholder="Startup Title"
+        />
 
-      {/* Markdown Editor Section */}
+        {errors.title && <p className="startup-form_error">{errors.title}</p>}
+      </div>
+
+      <div>
+        <label htmlFor="description" className="startup-form_label">
+          Description
+        </label>
+        <Textarea
+          id="description"
+          name="description"
+          className="startup-form_textarea"
+          required
+          placeholder="Startup Description"
+        />
+
+        {errors.description && (
+          <p className="startup-form_error">{errors.description}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="category" className="startup-form_label">
+          Category
+        </label>
+        <Input
+          id="category"
+          name="category"
+          className="startup-form_input"
+          required
+          placeholder="Startup Category (Tech, Health, Education...)"
+        />
+
+        {errors.category && (
+          <p className="startup-form_error">{errors.category}</p>
+        )}
+      </div>
+
+      <div>
+        <label htmlFor="link" className="startup-form_label">
+          Image URL
+        </label>
+        <Input
+          id="link"
+          name="link"
+          className="startup-form_input"
+          required
+          placeholder="Startup Image URL"
+        />
+
+        {errors.link && <p className="startup-form_error">{errors.link}</p>}
+      </div>
+
+      {/* Markdown editor for pitch content */}
       <div data-color-mode="light">
         <label htmlFor="pitch" className="startup-form_label">
           Pitch
         </label>
+
         <MDEditor
           value={pitch}
-          onChange={setPitch} // Simplified callback
+          onChange={(value) => setPitch(value)}
           id="pitch"
           preview="edit"
           height={300}
@@ -164,10 +175,11 @@ const StartupForm = () => {
             disallowedElements: ["style"],
           }}
         />
+
         {errors.pitch && <p className="startup-form_error">{errors.pitch}</p>}
       </div>
 
-      {/* Submit Button */}
+      {/* Submit button with loading state */}
       <Button
         type="submit"
         className="startup-form_btn text-white"

@@ -21,7 +21,7 @@ export default async function CreateStartupPage() {
       {/* Hero section with title */}
       <section className="green_container !min-h-[230px]">
         <h1 className="heading">Submit Your Post</h1>
-        <p className="text-center mt-2 text-gray-600">
+        <p className="text-center mt-2 text-white">
           Share your startup journey with our community
         </p>
       </section>
